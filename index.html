@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorium Fisika: Fluida Dinamis & Pipa Interaktif</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .glass-panel { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); }
+        .tab-active { border-bottom: 3px solid #3b82f6; color: #60a5fa; font-weight: 700; }
+        canvas { touch-action: none; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
+
+    <div id="attendance-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+        <div class="bg-slate-900 border border-slate-700 text-slate-100 p-8 rounded-3xl max-w-lg w-full shadow-2xl space-y-6">
+            <div class="text-center space-y-2">
+                <div class="inline-flex p-4 bg-blue-600/20 text-blue-400 rounded-2xl text-3xl border border-blue-500/30">
+                    <i class="fa-solid fa-water"></i>
+                </div>
+                <h2 class="text-2xl font-extrabold text-white">Praktikum Virtual & LKPD Interaktif</h2>
+                <p class="text-sm text-slate-400">Topik: Fluida Dinamis & Pipa Air Mengalir</p>
+            </div>
+            <form id="attendance-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">Nama Lengkap Peserta Didik</label>
+                    <input type="text" id="student-name" required placeholder="Contoh: Salma Aulia" class="w-full px-4 py-3.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">Nomor Absen / Kelas</label>
+                    <input type="text" id="student-class" required placeholder="Contoh: XI MIPA 2 / 18" class="w-full px-4 py-3.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <button type="submit" class="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl transition shadow-lg shadow-blue-600/30">
+                    Masuk ke Laboratorium Virtual <i class="fa-solid fa-arrow-right ml-2"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 sticky top-0 z-40 px-6 py-3.5 flex flex-wrap justify-between items-center gap-4">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-md shadow-blue-500/20">
+                <i class="fa-solid fa-flask-vial"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-sm md:text-base text-white">Lab Fisika: Fluida Dinamis Pro</h1>
+                <p class="text-xs text-slate-400" id="user-display-info">Peserta: Belum Login</p>
+            </div>
+        </div>
+        <nav class="flex flex-wrap gap-1 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
+            <button onclick="switchTab('theory')" id="btn-theory" class="px-3.5 py-2 rounded-lg text-xs md:text-sm font-medium transition text-slate-300 hover:text-white tab-active">1. Teori</button>
+            <button onclick="switchTab('ideal')" id="btn-ideal" class="px-3.5 py-2 rounded-lg text-xs md:text-sm font-medium transition text-slate-300 hover:text-white">2. Fluida Ideal</button>
+            <button onclick="switchTab('continuity')" id="btn-continuity" class="px-3.5 py-2 rounded-lg text-xs md:text-sm font-medium transition text-slate-300 hover:text-white">3. Kontinuitas</button>
+            <button onclick="switchTab('bernoulli')" id="btn-bernoulli" class="px-3.5 py-2 rounded-lg text-xs md:text-sm font-medium transition text-slate-300 hover:text-white">4. Bernoulli</button>
+            <button onclick="switchTab('lkpd')" id="btn-lkpd" class="px-3.5 py-2 rounded-lg text-xs md:text-sm font-medium transition text-slate-300 hover:text-white">5. LKPD</button>
+            <button onclick="switchTab('reflection')" id="btn-reflection" class="px-3.5 py-2 rounded-lg text-xs md:text-sm font-medium transition text-slate-300 hover:text-white">6. Refleksi</button>
+        </nav>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6">
+
+        <section id="tab-theory" class="space-y-6">
+            <div class="bg-slate-900 border border-slate-800 p-6 md:p-8 rounded-3xl shadow-xl space-y-8">
+                <div class="border-b border-slate-800 pb-4">
+                    <span class="text-xs font-extrabold uppercase tracking-widest text-blue-400">Modul Belajar Fisika Kelas XI</span>
+                    <h2 class="text-2xl md:text-3xl font-extrabold text-white mt-1">Kajian Teori & Karakteristik Fluida Ideal</h2>
+                    <p class="text-slate-400 text-sm mt-2">Memahami dasar-dasar aliran fluida bergerak sebelum memasuki eksperimen virtual.</p>
+                </div>
+
+                <!-- Karakteristik Fluida Ideal dengan Gambar Ilustrasi -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-slate-950/60 p-6 md:p-8 rounded-3xl border border-slate-800">
+                    <div class="space-y-4">
+                        <h3 class="text-xl font-bold text-blue-400"><i class="fa-solid fa-book-open mr-2"></i> Apa itu Fluida Ideal?</h3>
+                        <p class="text-sm text-slate-300 leading-relaxed">
+                            Dalam studi fisika, fluida ideal didefinisikan sebagai fluida (cair atau gas) yang memiliki sifat-sifat khusus untuk menyederhanakan analisis matematis tanpa mengabaikan hukum fisika dasar. Karakteristik utamanya meliputi:
+                        </p>
+                        <ul class="space-y-2 text-xs md:text-sm text-slate-300">
+                            <li class="flex items-start space-x-2"><i class="fa-solid fa-check text-emerald-400 mt-1"></i><span><strong>Tidak dapat dimampatkan (Incompressible):</strong> Massa jenis (\(\rho\)) konstan di segala titik.</span></li>
+                            <li class="flex items-start space-x-2"><i class="fa-solid fa-check text-emerald-400 mt-1"></i><span><strong>Tidak memiliki kekentalan (Non-viscous):</strong> Tidak ada gaya gesekan internal antar lapisan fluida saat mengalir.</span></li>
+                            <li class="flex items-start space-x-2"><i class="fa-solid fa-check text-emerald-400 mt-1"></i><span><strong>Aliran Stasioner (Steady Flow):</strong> Kecepatan dan arah aliran di setiap titik konstan terhadap waktu.</span></li>
+                            <li class="flex items-start space-x-2"><i class="fa-solid fa-check text-emerald-400 mt-1"></i><span><strong>Aliran Irrotational:</strong> Partikel fluida tidak mengalami putaran/rotasi terhadap sumbunya (aliran laminer bersih).</span></li>
+                        </ul>
+                    </div>
+                    <div class="bg-slate-900 p-6 rounded-2xl border border-slate-700/60 flex flex-col items-center justify-center space-y-4 shadow-inner">
+                        <div class="w-full h-48 bg-gradient-to-r from-blue-950 to-indigo-950 rounded-xl border border-blue-500/30 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+                            <div class="absolute inset-0 opacity-20 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                            <i class="fa-solid fa-water text-4xl text-blue-400 mb-2 animate-bounce"></i>
+                            <span class="text-xs font-bold text-white text-center">Ilustrasi Aliran Laminer Fluida Ideal di Pipa</span>
+                            <div class="w-3/4 h-1.5 bg-blue-500 rounded-full mt-3 shadow-lg shadow-blue-500/50"></div>
+                        </div>
+                        <span class="text-[11px] text-slate-400 text-center italic">Gambar 1.1: Garis arus (streamline) sejajar dan teratur dalam pipa ideal.</span>
+                    </div>
+                </div>
+
+                <!-- Rumus Dasar Kontinuitas & Bernoulli -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-slate-950/60 p-6 rounded-2xl border border-slate-800 space-y-3">
+                        <h4 class="text-base font-bold text-emerald-400"><i class="fa-solid fa-arrows-split-up-and-left mr-2"></i> Asas Kontinuitas</h4>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            Debit air yang masuk pada penampang 1 sama dengan debit air yang keluar pada penampang 2.
+                        </p>
+                        <div class="bg-slate-900 p-3.5 rounded-xl text-center font-mono text-blue-300 text-sm">
+                            \[A_1 \cdot v_1 = A_2 \cdot v_2 = Q\]
+                        </div>
+                    </div>
+                    <div class="bg-slate-950/60 p-6 rounded-2xl border border-slate-800 space-y-3">
+                        <h4 class="text-base font-bold text-emerald-400"><i class="fa-solid fa-gauge-high mr-2"></i> Hukum Bernoulli</h4>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            Jumlah tekanan, energi kinetik persatuan volume, dan energi potensial persatuan volume bernilai konstan.
+                        </p>
+                        <div class="bg-slate-900 p-3.5 rounded-xl text-center font-mono text-blue-300 text-sm">
+                            \[P_1 + \frac{1}{2}\rho v_1^2 + \rho g h_1 = P_2 + \frac{1}{2}\rho v_2^2 + \rho g h_2\]
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-ideal" class="space-y-6 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-xl space-y-5 flex flex-col justify-between">
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <h3 class="font-bold text-base text-blue-400"><i class="fa-solid fa-sliders mr-2"></i>Kontrol Pipa Ideal</h3>
+                            <span class="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg text-xs font-bold border border-emerald-500/20">Modul 1</span>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Luas Penampang Awal (\(A_1\)): <span id="ideal-val-a1" class="text-blue-400 font-bold">12</span> cm²</label>
+                            <input type="range" id="ideal-slider-a1" min="6" max="20" value="12" step="1" class="w-full accent-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Kecepatan Alir (\(v_1\)): <span id="ideal-val-v1" class="text-blue-400 font-bold">1.5</span> m/s</label>
+                            <input type="range" id="ideal-slider-v1" min="0.5" max="3.0" value="1.5" step="0.25" class="w-full accent-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Luas Penampang Akhir (\(A_2\)): <span id="ideal-val-a2" class="text-blue-400 font-bold">4</span> cm²</label>
+                            <input type="range" id="ideal-slider-a2" min="2" max="18" value="4" step="1" class="w-full accent-blue-500">
+                        </div>
+                        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2 text-xs">
+                            <div class="font-bold text-emerald-400 border-b border-slate-800 pb-1">Hasil Perhitungan:</div>
+                            <div class="flex justify-between"><span>Debit (\(Q\)):</span> <span id="ideal-calc-q" class="font-mono text-cyan-300">1,800 cm³/s</span></div>
+                            <div class="flex justify-between"><span>Kecepatan Titik 2 (\(v_2\)):</span> <span id="ideal-calc-v2" class="font-mono text-emerald-300">4.50 m/s</span></div>
+                        </div>
+                    </div>
+                    <button onclick="recordIdealData()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs transition shadow-lg shadow-blue-600/30">
+                        <i class="fa-solid fa-camera mr-2"></i>Ambil Data
+                    </button>
+                </div>
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="bg-slate-900 border border-slate-800 rounded-3xl shadow-xl relative overflow-hidden h-[360px] flex flex-col">
+                        <div class="absolute top-4 left-4 z-10 bg-slate-950/80 backdrop-blur px-4 py-2 rounded-xl border border-slate-800 flex items-center space-x-3 text-xs">
+                            <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span class="font-medium text-slate-200">Simulasi Aliran Air Kontinu di Pipa Lurus / Konstriksi</span>
+                        </div>
+                        <canvas id="pipeCanvas" class="w-full h-full bg-slate-950"></canvas>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 p-5 rounded-3xl shadow-xl space-y-3">
+                        <h4 class="font-bold text-sm text-white"><i class="fa-solid fa-table mr-2 text-blue-400"></i>Tabel Data Pipa Ideal</h4>
+                        <div class="overflow-x-auto max-h-36">
+                            <table id="table-ideal" class="w-full text-left text-xs">
+                                <thead class="bg-slate-950 text-slate-400 sticky top-0">
+                                    <tr><th class="p-2">No</th><th class="p-2">\(A_1\)</th><th class="p-2">\(v_1\)</th><th class="p-2">\(A_2\)</th><th class="p-2">\(v_2\)</th><th class="p-2">\(Q\)</th></tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-800 text-slate-300"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-continuity" class="space-y-6 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-xl space-y-5 flex flex-col justify-between">
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <h3 class="font-bold text-base text-blue-400"><i class="fa-solid fa-sliders mr-2"></i>Kontrol Kontinuitas</h3>
+                            <span class="px-2.5 py-1 bg-blue-500/10 text-blue-400 rounded-lg text-xs font-bold border border-blue-500/20">Modul 2</span>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Luas Pipa 1 (\(A_1\)): <span id="cont-val-a1" class="text-blue-400 font-bold">10</span> cm²</label>
+                            <input type="range" id="cont-slider-a1" min="4" max="18" value="10" step="1" class="w-full accent-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Kecepatan 1 (\(v_1\)): <span id="cont-val-v1" class="text-blue-400 font-bold">2.0</span> m/s</label>
+                            <input type="range" id="cont-slider-v1" min="1" max="5" value="2.0" step="0.5" class="w-full accent-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Luas Pipa 2 (\(A_2\)): <span id="cont-val-a2" class="text-blue-400 font-bold">5</span> cm²</label>
+                            <input type="range" id="cont-slider-a2" min="2" max="15" value="5" step="1" class="w-full accent-blue-500">
+                        </div>
+                        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2 text-xs">
+                            <div class="font-bold text-emerald-400 border-b border-slate-800 pb-1">Analisis Titik 1 & Titik 2:</div>
+                            <div class="flex justify-between"><span>Debit (\(Q = A_1 v_1\)):</span> <span id="cont-calc-q" class="font-mono text-blue-300">2,000 cm³/s</span></div>
+                            <div class="flex justify-between"><span>Kecepatan (\(v_2 = Q/A_2\)):</span> <span id="cont-calc-v2" class="font-mono text-emerald-300">4.00 m/s</span></div>
+                        </div>
+                    </div>
+                    <button onclick="recordContinuityData()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs transition shadow-lg shadow-blue-600/30">
+                        <i class="fa-solid fa-camera mr-2"></i>Ambil Data Kontinuitas
+                    </button>
+                </div>
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="bg-slate-900 border border-slate-800 rounded-3xl shadow-xl relative overflow-hidden h-[300px] flex flex-col">
+                        <div class="absolute top-3 left-3 z-10 bg-slate-950/80 backdrop-blur px-3 py-1.5 rounded-xl border border-slate-800 text-[11px] font-medium text-slate-200">
+                            Simulasi Asas Kontinuitas (Air Mengalir dari Titik 1 ke Titik 2)
+                        </div>
+                        <canvas id="continuityCanvas" class="w-full h-full bg-slate-950"></canvas>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-slate-900 border border-slate-800 p-5 rounded-3xl shadow-xl flex flex-col justify-between">
+                            <h4 class="font-bold text-sm text-white mb-3"><i class="fa-solid fa-chart-line mr-2 text-blue-400"></i>Grafik \(A_2\) vs \(v_2\)</h4>
+                            <div class="h-36 relative"><canvas id="chartContinuity"></canvas></div>
+                        </div>
+                        <div class="bg-slate-900 border border-slate-800 p-5 rounded-3xl shadow-xl space-y-3">
+                            <h4 class="font-bold text-sm text-white"><i class="fa-solid fa-table mr-2 text-blue-400"></i>Tabel Data Kontinuitas</h4>
+                            <div class="overflow-x-auto max-h-36">
+                                <table id="table-continuity" class="w-full text-left text-xs">
+                                    <thead class="bg-slate-950 text-slate-400 sticky top-0"><tr><th class="p-2">No</th><th class="p-2">\(A_1\)</th><th class="p-2">\(v_1\)</th><th class="p-2">\(A_2\)</th><th class="p-2">\(v_2\)</th></tr></thead>
+                                    <tbody class="divide-y divide-slate-800 text-slate-300"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-bernoulli" class="space-y-6 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-xl space-y-5 flex flex-col justify-between">
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <h3 class="font-bold text-base text-blue-400"><i class="fa-solid fa-sliders mr-2"></i>Kontrol Hukum Bernoulli</h3>
+                            <span class="px-2.5 py-1 bg-indigo-500/10 text-indigo-400 rounded-lg text-xs font-bold border border-indigo-500/20">Modul 3</span>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Tekanan Titik 1 (\(P_1\)): <span id="bern-val-p1" class="text-blue-400 font-bold">150.000</span> Pa</label>
+                            <input type="range" id="bern-slider-p1" min="100000" max="250000" value="150000" step="5000" class="w-full accent-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Kecepatan Titik 1 (\(v_1\)): <span id="bern-val-v1" class="text-blue-400 font-bold">2.0</span> m/s</label>
+                            <input type="range" id="bern-slider-v1" min="1.0" max="5.0" value="2.0" step="0.5" class="w-full accent-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Ketinggian Titik 1 (\(h_1\)): <span id="bern-val-h1" class="text-blue-400 font-bold">1.0</span> m</label>
+                            <input type="range" id="bern-slider-h1" min="0" max="3" value="1.0" step="0.5" class="w-full accent-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Ketinggian Titik 2 (\(h_2\)): <span id="bern-val-h2" class="text-blue-400 font-bold">4.0</span> m</label>
+                            <input type="range" id="bern-slider-h2" min="3" max="7" value="4.0" step="0.5" class="w-full accent-blue-500">
+                        </div>
+                        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2 text-xs">
+                            <div class="font-bold text-emerald-400 border-b border-slate-800 pb-1">Hasil Analisis Bernoulli:</div>
+                            <div class="flex justify-between"><span>Tekanan Titik 2 (\(P_2\)):</span> <span id="bern-calc-p2" class="font-mono text-blue-300">118,500 Pa</span></div>
+                        </div>
+                    </div>
+                    <button onclick="recordBernoulliData()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs transition shadow-lg shadow-blue-600/30">
+                        <i class="fa-solid fa-camera mr-2"></i>Ambil Data Bernoulli
+                    </button>
+                </div>
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="bg-slate-900 border border-slate-800 rounded-3xl shadow-xl relative overflow-hidden h-[300px] flex flex-col">
+                        <div class="absolute top-3 left-3 z-10 bg-slate-950/80 backdrop-blur px-3 py-1.5 rounded-xl border border-slate-800 text-[11px] font-medium text-slate-200">
+                            Simulasi Hukum Bernoulli (Pipa Miring/Bertingkat Sesuai Referensi & Air Mengalir)
+                        </div>
+                        <canvas id="bernoulliCanvas" class="w-full h-full bg-slate-950"></canvas>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-slate-900 border border-slate-800 p-5 rounded-3xl shadow-xl flex flex-col justify-between">
+                            <h4 class="font-bold text-sm text-white mb-3"><i class="fa-solid fa-chart-line mr-2 text-blue-400"></i>Grafik \(h_2\) vs \(P_2\)</h4>
+                            <div class="h-36 relative"><canvas id="chartBernoulli"></canvas></div>
+                        </div>
+                        <div class="bg-slate-900 border border-slate-800 p-5 rounded-3xl shadow-xl space-y-3">
+                            <h4 class="font-bold text-sm text-white"><i class="fa-solid fa-table mr-2 text-blue-400"></i>Tabel Data Bernoulli</h4>
+                            <div class="overflow-x-auto max-h-36">
+                                <table id="table-bernoulli" class="w-full text-left text-xs">
+                                    <thead class="bg-slate-950 text-slate-400 sticky top-0"><tr><th class="p-2">\(P_1\)</th><th class="p-2">\(h_1\)</th><th class="p-2">\(h_2\)</th><th class="p-2">\(P_2\)</th></tr></thead>
+                                    <tbody class="divide-y divide-slate-800 text-slate-300"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-lkpd" class="space-y-6 hidden">
+            <div class="bg-slate-900 border border-slate-800 p-6 md:p-8 rounded-3xl shadow-xl max-w-4xl mx-auto space-y-8">
+                <div class="text-center border-b border-slate-800 pb-6 space-y-3">
+                    <span class="px-3 py-1 bg-blue-500/10 text-blue-400 rounded-full text-xs font-bold border border-blue-500/20">Lembar Kerja Peserta Didik (LKPD)</span>
+                    <h2 class="text-2xl md:text-3xl font-extrabold text-white">Evaluasi & Analisis Fluida Dinamis</h2>
+                    <div class="inline-flex flex-wrap justify-center items-center gap-3 bg-slate-950 px-5 py-2.5 rounded-xl border border-slate-800 text-sm">
+                        <span>Nama Peserta: <strong id="lkpd-name" class="text-white">-</strong></span>
+                        <span class="text-slate-600">|</span>
+                        <span>Nomor Absen / Kelas: <strong id="lkpd-class" class="text-white">-</strong></span>
+                    </div>
+                </div>
+                <div class="space-y-3 bg-slate-950/60 p-6 rounded-2xl border border-slate-800">
+                    <span class="text-xs font-bold text-blue-400 uppercase tracking-wider">Pertanyaan 1: Kontinuitas Pipa</span>
+                    <p class="text-sm text-slate-200">Bagaimana kecepatan aliran air di titik 2 ketika luas penampang pipa diperkecil berdasarkan Asas Kontinuitas?</p>
+                    <textarea id="ans-1" rows="3" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-sm text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Tuliskan analisis..."></textarea>
+                </div>
+                <div class="space-y-3 bg-slate-950/60 p-6 rounded-2xl border border-slate-800">
+                    <span class="text-xs font-bold text-blue-400 uppercase tracking-wider">Pertanyaan 2: Hukum Bernoulli pada Ketinggian Pipa</span>
+                    <p class="text-sm text-slate-200">Mengapa tekanan air di titik yang lebih tinggi dapat berkurang ketika fluida bergerak naik?</p>
+                    <textarea id="ans-2" rows="3" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-sm text-white focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Tuliskan jawaban..."></textarea>
+                </div>
+                <div class="flex justify-end pt-4">
+                    <button onclick="submitLKPD()" class="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl transition shadow-lg shadow-blue-600/30 flex items-center space-x-2">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span>Kirim Laporan LKPD</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-reflection" class="space-y-6 hidden">
+            <div class="bg-slate-900 border border-slate-800 p-6 md:p-8 rounded-3xl shadow-xl max-w-3xl mx-auto space-y-8">
+                <div class="text-center border-b border-slate-800 pb-6 space-y-3">
+                    <span class="px-3 py-1 bg-purple-500/10 text-purple-400 rounded-full text-xs font-bold border border-purple-500/20">Modul 6</span>
+                    <h2 class="text-2xl md:text-3xl font-extrabold text-white">Refleksi Penggunaan Media Pembelajaran</h2>
+                    <p class="text-slate-400 text-sm">Berikan tanggapan dan penilaian Anda terhadap simulasi virtual laboratorium Fluida Dinamis ini.</p>
+                </div>
+                <div class="space-y-6">
+                    <div class="space-y-3 bg-slate-950/60 p-6 rounded-2xl border border-slate-800">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-300">1. Seberapa terbantu Anda dalam memahami konsep Asas Kontinuitas & Hukum Bernoulli melalui simulasi ini?</label>
+                        <select id="ref-q1" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-sm text-white focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                            <option value="Sangat Membantu">Sangat Membantu</option>
+                            <option value="Cukup Membantu">Cukup Membantu</option>
+                            <option value="Kurang Membantu">Kurang Membantu</option>
+                        </select>
+                    </div>
+                    <div class="space-y-3 bg-slate-950/60 p-6 rounded-2xl border border-slate-800">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-300">2. Bagian manakah dari praktikum virtual ini yang paling menarik atau berkesan bagi Anda?</label>
+                        <textarea id="ref-q2" rows="3" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-sm text-white focus:ring-2 focus:ring-purple-500 focus:outline-none" placeholder="Contoh: Simulasi pipa miring dan grafik interaktif..."></textarea>
+                    </div>
+                    <div class="space-y-3 bg-slate-950/60 p-6 rounded-2xl border border-slate-800">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-300">3. Saran atau masukan untuk pengembangan media pembelajaran fisika selanjutnya:</label>
+                        <textarea id="ref-q3" rows="3" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-sm text-white focus:ring-2 focus:ring-purple-500 focus:outline-none" placeholder="Tuliskan saran..."></textarea>
+                    </div>
+                    <div class="flex justify-end pt-4">
+                        <button onclick="submitReflection()" class="px-8 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-xl transition shadow-lg shadow-purple-600/30 flex items-center space-x-2">
+                            <i class="fa-solid fa-star"></i>
+                            <span>Kirim Refleksi Pembelajaran</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        let studentData = { name: "", class: "" };
+        let activeTab = 'theory';
+
+        let idealDataList = [];
+        let continuityDataList = [];
+        let bernoulliDataList = [];
+        let chartContinuity = null;
+        let chartBernoulli = null;
+
+        let pipeCanvas, ctxPipe;
+        let continuityCanvas, ctxContinuity;
+        let bernoulliCanvas, ctxBernoulliAnim;
+        let waterParticles = [];
+        let continuityParticles = [];
+        let bernoulliParticles = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('attendance-form');
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const name = document.getElementById('student-name').value.trim();
+                const cls = document.getElementById('student-class').value.trim();
+                if(name && cls) {
+                    studentData.name = name;
+                    studentData.class = cls;
+                    document.getElementById('user-display-info').innerText = `Peserta: ${name} (${cls})`;
+                    document.getElementById('lkpd-name').innerText = name;
+                    document.getElementById('lkpd-class').innerText = cls;
+                    document.getElementById('attendance-modal').classList.add('hidden');
+                    switchTab('theory');
+                }
+            });
+
+            setupEventListeners();
+            initCharts();
+            initSimulations();
+        });
+
+        function switchTab(tabId) {
+            ['theory', 'ideal', 'continuity', 'bernoulli', 'lkpd', 'reflection'].forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                if(el) el.classList.add('hidden');
+                const btn = document.getElementById(`btn-${t}`);
+                if(btn) btn.classList.remove('tab-active');
+            });
+            const targetTab = document.getElementById(`tab-${tabId}`);
+            if(targetTab) targetTab.classList.remove('hidden');
+            const targetBtn = document.getElementById(`btn-${tabId}`);
+            if(targetBtn) targetBtn.classList.add('tab-active');
+            activeTab = tabId;
+
+            if(tabId === 'ideal' || tabId === 'continuity' || tabId === 'bernoulli') {
+                setTimeout(resizeCanvases, 50);
+            }
+        }
+
+        function setupEventListeners() {
+            ['a1', 'v1', 'a2'].forEach(id => {
+                const s = document.getElementById(`ideal-slider-${id}`);
+                if(s) s.addEventListener('input', e => { document.getElementById(`ideal-val-${id}`).innerText = e.target.value; updateIdealCalculations(); });
+            });
+            updateIdealCalculations();
+
+            ['a1', 'v1', 'a2'].forEach(id => {
+                const s = document.getElementById(`cont-slider-${id}`);
+                if(s) s.addEventListener('input', e => { document.getElementById(`cont-val-${id}`).innerText = e.target.value; updateContinuityCalculations(); });
+            });
+            updateContinuityCalculations();
+
+            ['p1', 'v1', 'h1', 'h2'].forEach(id => {
+                const s = document.getElementById(`bern-slider-${id}`);
+                if(s) s.addEventListener('input', e => { document.getElementById(`bern-val-${id}`).innerText = parseFloat(e.target.value).toLocaleString('id-ID'); updateBernoulliCalculations(); });
+            });
+            updateBernoulliCalculations();
+        }
+
+        function updateIdealCalculations() {
+            let a1 = parseFloat(document.getElementById('ideal-slider-a1').value);
+            let v1 = parseFloat(document.getElementById('ideal-slider-v1').value);
+            let a2 = parseFloat(document.getElementById('ideal-slider-a2').value);
+            let Q = a1 * v1 * 100;
+            let v2 = (Q / a2 / 100).toFixed(2);
+            document.getElementById('ideal-calc-q').innerText = `${Math.round(Q).toLocaleString('id-ID')} cm³/s`;
+            document.getElementById('ideal-calc-v2').innerText = `${v2} m/s`;
+        }
+
+        function recordIdealData() {
+            let a1 = document.getElementById('ideal-slider-a1').value;
+            let v1 = document.getElementById('ideal-slider-v1').value;
+            let a2 = document.getElementById('ideal-slider-a2').value;
+            let Q = parseFloat(a1) * parseFloat(v1) * 100;
+            let v2 = (Q / parseFloat(a2) / 100).toFixed(2);
+            idealDataList.push({ a1, v1, a2, v2, Q: Math.round(Q) });
+            updateIdealTable();
+        }
+
+        function updateIdealTable() {
+            const tbody = document.querySelector('#table-ideal tbody');
+            tbody.innerHTML = '';
+            idealDataList.forEach((d, idx) => {
+                tbody.innerHTML += `<tr class="hover:bg-slate-800/50"><td class="p-2">${idx+1}</td><td class="p-2">${d.a1}</td><td class="p-2">${d.v1}</td><td class="p-2">${d.a2}</td><td class="p-2 text-emerald-400">${d.v2}</td><td class="p-2 text-blue-400">${d.Q}</td></tr>`;
+            });
+        }
+
+        function updateContinuityCalculations() {
+            let a1 = parseFloat(document.getElementById('cont-slider-a1').value);
+            let v1 = parseFloat(document.getElementById('cont-slider-v1').value);
+            let a2 = parseFloat(document.getElementById('cont-slider-a2').value);
+            let Q = a1 * (v1 * 100);
+            let v2 = (Q / a2 / 100).toFixed(2);
+            document.getElementById('cont-calc-q').innerText = `${Math.round(Q).toLocaleString('id-ID')} cm³/s`;
+            document.getElementById('cont-calc-v2').innerText = `${v2} m/s`;
+        }
+
+        function recordContinuityData() {
+            let a1 = document.getElementById('cont-slider-a1').value;
+            let v1 = document.getElementById('cont-slider-v1').value;
+            let a2 = document.getElementById('cont-slider-a2').value;
+            let v2 = ((parseFloat(a1) * parseFloat(v1) * 100) / parseFloat(a2) / 100).toFixed(2);
+            continuityDataList.push({ a1, v1, a2, v2 });
+            updateContinuityTable();
+            updateContinuityChart();
+        }
+
+        function updateContinuityTable() {
+            const tbody = document.querySelector('#table-continuity tbody');
+            tbody.innerHTML = '';
+            continuityDataList.forEach((d, idx) => {
+                tbody.innerHTML += `<tr class="hover:bg-slate-800/50"><td class="p-2">${idx+1}</td><td class="p-2">${d.a1}</td><td class="p-2">${d.v1}</td><td class="p-2">${d.a2}</td><td class="p-2 text-emerald-400">${d.v2}</td></tr>`;
+            });
+        }
+
+        function updateBernoulliCalculations() {
+            let P1 = parseFloat(document.getElementById('bern-slider-p1').value);
+            let v1 = parseFloat(document.getElementById('bern-slider-v1').value);
+            let h1 = parseFloat(document.getElementById('bern-slider-h1').value);
+            let h2 = parseFloat(document.getElementById('bern-slider-h2').value);
+            let rho = 1000, g = 10;
+            let term1 = P1 + 0.5 * rho * Math.pow(v1, 2) + rho * g * h1;
+            let P2 = term1 - 0.5 * rho * Math.pow(v1, 2) - rho * g * h2;
+            document.getElementById('bern-calc-p2').innerText = `${Math.round(P2).toLocaleString('id-ID')} Pa`;
+        }
+
+        function recordBernoulliData() {
+            let P1 = document.getElementById('bern-slider-p1').value;
+            let h1 = document.getElementById('bern-slider-h1').value;
+            let h2 = document.getElementById('bern-slider-h2').value;
+            let v1 = parseFloat(document.getElementById('bern-slider-v1').value);
+            let rho = 1000, g = 10;
+            let term1 = parseFloat(P1) + 0.5 * rho * Math.pow(v1, 2) + rho * g * parseFloat(h1);
+            let P2 = Math.round(term1 - 0.5 * rho * Math.pow(v1, 2) - rho * g * parseFloat(h2));
+            bernoulliDataList.push({ P1, h1, h2, P2 });
+            updateBernoulliTable();
+            updateBernoulliChart();
+        }
+
+        function updateBernoulliTable() {
+            const tbody = document.querySelector('#table-bernoulli tbody');
+            tbody.innerHTML = '';
+            bernoulliDataList.forEach((d) => {
+                tbody.innerHTML += `<tr class="hover:bg-slate-800/50"><td class="p-2">${parseInt(d.P1).toLocaleString('id-ID')}</td><td class="p-2">${d.h1}</td><td class="p-2">${d.h2}</td><td class="p-2 text-blue-400">${parseInt(d.P2).toLocaleString('id-ID')}</td></tr>`;
+            });
+        }
+
+        function initCharts() {
+            const ctxCont = document.getElementById('chartContinuity').getContext('2d');
+            chartContinuity = new Chart(ctxCont, {
+                type: 'line',
+                data: { labels: [], datasets: [{ label: 'v2', data: [], borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', tension: 0.3, fill: true }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } }, x: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } } }, plugins: { legend: { display: false } } }
+            });
+
+            const ctxBern = document.getElementById('chartBernoulli').getContext('2d');
+            chartBernoulli = new Chart(ctxBern, {
+                type: 'line',
+                data: { labels: [], datasets: [{ label: 'P2', data: [], borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.1)', tension: 0.3, fill: true }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: false, grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } }, x: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } } }, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function updateContinuityChart() {
+            if(!chartContinuity) return;
+            chartContinuity.data.labels = continuityDataList.map((_, i) => `Data ${i+1}`);
+            chartContinuity.data.datasets[0].data = continuityDataList.map(d => parseFloat(d.v2));
+            chartContinuity.update();
+        }
+
+        function updateBernoulliChart() {
+            if(!chartBernoulli) return;
+            chartBernoulli.data.labels = bernoulliDataList.map((_, i) => `Data ${i+1}`);
+            chartBernoulli.data.datasets[0].data = bernoulliDataList.map(d => parseFloat(d.P2));
+            chartBernoulli.update();
+        }
+
+        function initSimulations() {
+            pipeCanvas = document.getElementById('pipeCanvas');
+            ctxPipe = pipeCanvas.getContext('2d');
+
+            continuityCanvas = document.getElementById('continuityCanvas');
+            ctxContinuity = continuityCanvas.getContext('2d');
+
+            bernoulliCanvas = document.getElementById('bernoulliCanvas');
+            ctxBernoulliAnim = bernoulliCanvas.getContext('2d');
+
+            resizeCanvases();
+            window.addEventListener('resize', resizeCanvases);
+
+            for(let i=0; i<60; i++) {
+                waterParticles.push({ x: Math.random() * 1000, lane: (Math.random() - 0.5) * 1.6, speed: 0.8 + Math.random() * 0.4 });
+                continuityParticles.push({ x: Math.random() * 1000, lane: (Math.random() - 0.5) * 1.6, speed: 0.8 + Math.random() * 0.4 });
+                bernoulliParticles.push({ x: Math.random() * 1000, lane: (Math.random() - 0.5) * 1.6, speed: 0.8 + Math.random() * 0.4 });
+            }
+
+            animateAllSimulations();
+        }
+
+        function resizeCanvases() {
+            [pipeCanvas, continuityCanvas, bernoulliCanvas].forEach(cvs => {
+                if(cvs) {
+                    cvs.width = cvs.parentElement.clientWidth;
+                    cvs.height = cvs.parentElement.clientHeight;
+                }
+            });
+        }
+
+        function animateAllSimulations() {
+            requestAnimationFrame(animateAllSimulations);
+            renderPipeSimulation();
+            renderContinuitySimulation();
+            renderBernoulliSimulation();
+        }
+
+        function renderPipeSimulation() {
+            if(!ctxPipe || !pipeCanvas) return;
+            let w = pipeCanvas.width, h = pipeCanvas.height;
+            ctxPipe.clearRect(0, 0, w, h);
+
+            let a1 = parseFloat(document.getElementById('ideal-slider-a1').value) || 12;
+            let v1 = parseFloat(document.getElementById('ideal-slider-v1').value) || 1.5;
+            let a2 = parseFloat(document.getElementById('ideal-slider-a2').value) || 4;
+
+            let centerY = h / 2, r1 = a1 * 3, r2 = a2 * 3;
+            let startX = 40, transX1 = w * 0.38, transX2 = w * 0.62, endX = w - 40;
+
+            let grad = ctxPipe.createLinearGradient(0, centerY - r1, 0, centerY + r1);
+            grad.addColorStop(0, 'rgba(56, 189, 248, 0.4)');
+            grad.addColorStop(0.5, 'rgba(14, 165, 233, 0.8)');
+            grad.addColorStop(1, 'rgba(56, 189, 248, 0.4)');
+
+            ctxPipe.fillStyle = grad;
+            ctxPipe.beginPath();
+            ctxPipe.moveTo(startX, centerY - r1);
+            ctxPipe.lineTo(transX1, centerY - r1);
+            ctxPipe.lineTo(transX2, centerY - r2);
+            ctxPipe.lineTo(endX, centerY - r2);
+            ctxPipe.lineTo(endX, centerY + r2);
+            ctxPipe.lineTo(transX2, centerY + r2);
+            ctxPipe.lineTo(transX1, centerY + r1);
+            ctxPipe.lineTo(startX, centerY + r1);
+            ctxPipe.closePath();
+            ctxPipe.fill();
+
+            ctxPipe.fillStyle = 'rgba(30, 41, 59, 0.95)';
+            ctxPipe.strokeStyle = '#60a5fa'; ctxPipe.lineWidth = 3;
+            ctxPipe.beginPath();
+            ctxPipe.moveTo(startX, centerY - r1 - 16); ctxPipe.lineTo(transX1, centerY - r1 - 16); ctxPipe.lineTo(transX2, centerY - r2 - 16); ctxPipe.lineTo(endX, centerY - r2 - 16);
+            ctxPipe.lineTo(endX, centerY - r2); ctxPipe.lineTo(transX2, centerY - r2); ctxPipe.lineTo(transX1, centerY - r1); ctxPipe.lineTo(startX, centerY - r1);
+            ctxPipe.closePath(); ctxPipe.fill(); ctxPipe.stroke();
+
+            ctxPipe.beginPath();
+            ctxPipe.moveTo(startX, centerY + r1 + 16); ctxPipe.lineTo(transX1, centerY + r1 + 16); ctxPipe.lineTo(transX2, centerY + r2 + 16); ctxPipe.lineTo(endX, centerY + r2 + 16);
+            ctxPipe.lineTo(endX, centerY + r2); ctxPipe.lineTo(transX2, centerY + r2); ctxPipe.lineTo(transX1, centerY + r1); ctxPipe.lineTo(startX, centerY + r1);
+            ctxPipe.closePath(); ctxPipe.fill(); ctxPipe.stroke();
+
+            ctxPipe.strokeStyle = 'rgba(255, 255, 255, 0.7)'; ctxPipe.lineWidth = 1.5; ctxPipe.setLineDash([6, 6]);
+            ctxPipe.beginPath();
+            for(let off = -0.5; off <= 0.5; off += 0.5) {
+                ctxPipe.moveTo(startX, centerY + off * r1); ctxPipe.lineTo(transX1, centerY + off * r1); ctxPipe.lineTo(transX2, centerY + off * r2); ctxPipe.lineTo(endX, centerY + off * r2);
+            }
+            ctxPipe.stroke(); ctxPipe.setLineDash([]);
+
+            waterParticles.forEach(p => {
+                let currR = r1;
+                if(p.x > transX1 && p.x < transX2) {
+                    let prog = (p.x - transX1) / (transX2 - transX1);
+                    currR = r1 + (r2 - r1) * prog;
+                } else if(p.x >= transX2) { currR = r2; }
+                p.x += (v1 * 2) * p.speed;
+                if(p.x > endX) p.x = startX;
+                let posY = centerY + p.lane * (currR * 0.8);
+                ctxPipe.fillStyle = '#bae6fd';
+                ctxPipe.beginPath(); ctxPipe.arc(p.x, posY, 2.5, 0, Math.PI * 2); ctxPipe.fill();
+            });
+
+            ctxPipe.fillStyle = '#ffffff'; ctxPipe.font = 'bold 12px Plus Jakarta Sans';
+            ctxPipe.fillText('1', startX + 10, centerY - r1 - 22);
+            ctxPipe.fillText('2', transX2 + 10, centerY - r2 - 22);
+        }
+
+        function renderContinuitySimulation() {
+            if(!ctxContinuity || !continuityCanvas) return;
+            let w = continuityCanvas.width, h = continuityCanvas.height;
+            ctxContinuity.clearRect(0, 0, w, h);
+
+            let a1 = parseFloat(document.getElementById('cont-slider-a1').value) || 10;
+            let v1 = parseFloat(document.getElementById('cont-slider-v1').value) || 2.0;
+            let a2 = parseFloat(document.getElementById('cont-slider-a2').value) || 5;
+
+            let centerY = h / 2, r1 = a1 * 3, r2 = a2 * 3;
+            let startX = 40, transX1 = w * 0.38, transX2 = w * 0.62, endX = w - 40;
+
+            let grad = ctxContinuity.createLinearGradient(0, centerY - r1, 0, centerY + r1);
+            grad.addColorStop(0, 'rgba(56, 189, 248, 0.4)');
+            grad.addColorStop(0.5, 'rgba(14, 165, 233, 0.8)');
+            grad.addColorStop(1, 'rgba(56, 189, 248, 0.4)');
+
+            ctxContinuity.fillStyle = grad;
+            ctxContinuity.beginPath();
+            ctxContinuity.moveTo(startX, centerY - r1);
+            ctxContinuity.lineTo(transX1, centerY - r1);
+            ctxContinuity.lineTo(transX2, centerY - r2);
+            ctxContinuity.lineTo(endX, centerY - r2);
+            ctxContinuity.lineTo(endX, centerY + r2);
+            ctxContinuity.lineTo(transX2, centerY + r2);
+            ctxContinuity.lineTo(transX1, centerY + r1);
+            ctxContinuity.lineTo(startX, centerY + r1);
+            ctxContinuity.closePath();
+            ctxContinuity.fill();
+
+            ctxContinuity.fillStyle = 'rgba(30, 41, 59, 0.95)';
+            ctxContinuity.strokeStyle = '#38bdf8'; ctxContinuity.lineWidth = 3;
+            ctxContinuity.beginPath();
+            ctxContinuity.moveTo(startX, centerY - r1 - 14); ctxContinuity.lineTo(transX1, centerY - r1 - 14); ctxContinuity.lineTo(transX2, centerY - r2 - 14); ctxContinuity.lineTo(endX, centerY - r2 - 14);
+            ctxContinuity.lineTo(endX, centerY - r2); ctxContinuity.lineTo(transX2, centerY - r2); ctxContinuity.lineTo(transX1, centerY - r1); ctxContinuity.lineTo(startX, centerY - r1);
+            ctxContinuity.closePath(); ctxContinuity.fill(); ctxContinuity.stroke();
+
+            ctxContinuity.beginPath();
+            ctxContinuity.moveTo(startX, centerY + r1 + 14); ctxContinuity.lineTo(transX1, centerY + r1 + 14); ctxContinuity.lineTo(transX2, centerY + r2 + 14); ctxContinuity.lineTo(endX, centerY + r2 + 14);
+            ctxContinuity.lineTo(endX, centerY + r2); ctxContinuity.lineTo(transX2, centerY + r2); ctxContinuity.lineTo(transX1, centerY + r1); ctxContinuity.lineTo(startX, centerY + r1);
+            ctxContinuity.closePath(); ctxContinuity.fill(); ctxContinuity.stroke();
+
+            ctxContinuity.strokeStyle = 'rgba(255, 255, 255, 0.7)'; ctxContinuity.lineWidth = 1.5; ctxContinuity.setLineDash([5, 5]);
+            ctxContinuity.beginPath();
+            for(let off = -0.5; off <= 0.5; off += 0.5) {
+                ctxContinuity.moveTo(startX, centerY + off * r1); ctxContinuity.lineTo(transX1, centerY + off * r1); ctxContinuity.lineTo(transX2, centerY + off * r2); ctxContinuity.lineTo(endX, centerY + off * r2);
+            }
+            ctxContinuity.stroke(); ctxContinuity.setLineDash([]);
+
+            continuityParticles.forEach(p => {
+                let currR = r1;
+                if(p.x > transX1 && p.x < transX2) {
+                    let prog = (p.x - transX1) / (transX2 - transX1);
+                    currR = r1 + (r2 - r1) * prog;
+                } else if(p.x >= transX2) { currR = r2; }
+                p.x += (v1 * 2) * p.speed;
+                if(p.x > endX) p.x = startX;
+                let posY = centerY + p.lane * (currR * 0.8);
+                ctxContinuity.fillStyle = '#bae6fd';
+                ctxContinuity.beginPath(); ctxContinuity.arc(p.x, posY, 2.5, 0, Math.PI * 2); ctxContinuity.fill();
+            });
+
+            ctxContinuity.fillStyle = '#ffffff'; ctxContinuity.font = 'bold 14px Plus Jakarta Sans';
+            ctxContinuity.fillText('1', startX + 25, centerY + 5);
+            ctxContinuity.fillText('2', transX2 + 15, centerY + 5);
+        }
+
+        function renderBernoulliSimulation() {
+            if(!ctxBernoulliAnim || !bernoulliCanvas) return;
+            let w = bernoulliCanvas.width, h = bernoulliCanvas.height;
+            ctxBernoulliAnim.clearRect(0, 0, w, h);
+
+            let v1 = parseFloat(document.getElementById('bern-slider-v1').value) || 2.0;
+
+            let startX = 50, endX = w - 50;
+            let startY = h * 0.75;
+            let trans1X = w * 0.35, trans2X = w * 0.55;
+            let endY = h * 0.35;
+            let pipeRadius = 24;
+
+            let grad = ctxBernoulliAnim.createLinearGradient(0, endY, 0, startY);
+            grad.addColorStop(0, 'rgba(56, 189, 248, 0.5)');
+            grad.addColorStop(1, 'rgba(14, 165, 233, 0.9)');
+
+            ctxBernoulliAnim.fillStyle = grad;
+            ctxBernoulliAnim.beginPath();
+            ctxBernoulliAnim.moveTo(startX, startY - pipeRadius);
+            ctxBernoulliAnim.lineTo(trans1X, startY - pipeRadius);
+            ctxBernoulliAnim.lineTo(trans2X, endY - pipeRadius);
+            ctxBernoulliAnim.lineTo(endX, endY - pipeRadius);
+            ctxBernoulliAnim.lineTo(endX, endY + pipeRadius);
+            ctxBernoulliAnim.lineTo(trans2X, endY + pipeRadius);
+            ctxBernoulliAnim.lineTo(trans1X, startY + pipeRadius);
+            ctxBernoulliAnim.lineTo(startX, startY + pipeRadius);
+            ctxBernoulliAnim.closePath();
+            ctxBernoulliAnim.fill();
+
+            ctxBernoulliAnim.fillStyle = 'rgba(30, 41, 59, 0.95)';
+            ctxBernoulliAnim.strokeStyle = '#6366f1'; ctxBernoulliAnim.lineWidth = 3;
+
+            ctxBernoulliAnim.beginPath();
+            ctxBernoulliAnim.moveTo(startX, startY - pipeRadius - 14);
+            ctxBernoulliAnim.lineTo(trans1X, startY - pipeRadius - 14);
+            ctxBernoulliAnim.lineTo(trans2X, endY - pipeRadius - 14);
+            ctxBernoulliAnim.lineTo(endX, endY - pipeRadius - 14);
+            ctxBernoulliAnim.lineTo(endX, endY - pipeRadius);
+            ctxBernoulliAnim.lineTo(trans2X, endY - pipeRadius);
+            ctxBernoulliAnim.lineTo(trans1X, startY - pipeRadius);
+            ctxBernoulliAnim.lineTo(startX, startY - pipeRadius);
+            ctxBernoulliAnim.closePath(); ctxBernoulliAnim.fill(); ctxBernoulliAnim.stroke();
+
+            ctxBernoulliAnim.beginPath();
+            ctxBernoulliAnim.moveTo(startX, startY + pipeRadius + 14);
+            ctxBernoulliAnim.lineTo(trans1X, startY + pipeRadius + 14);
+            ctxBernoulliAnim.lineTo(trans2X, endY + pipeRadius + 14);
+            ctxBernoulliAnim.lineTo(endX, endY + pipeRadius + 14);
+            ctxBernoulliAnim.lineTo(endX, endY + pipeRadius);
+            ctxBernoulliAnim.lineTo(trans2X, endY + pipeRadius);
+            ctxBernoulliAnim.lineTo(trans1X, startY + pipeRadius);
+            ctxBernoulliAnim.lineTo(startX, startY + pipeRadius);
+            ctxBernoulliAnim.closePath(); ctxBernoulliAnim.fill(); ctxBernoulliAnim.stroke();
+
+            ctxBernoulliAnim.strokeStyle = 'rgba(255, 255, 255, 0.7)'; ctxBernoulliAnim.lineWidth = 1.5; ctxBernoulliAnim.setLineDash([6, 6]);
+            ctxBernoulliAnim.beginPath();
+            for(let off = -0.5; off <= 0.5; off += 0.5) {
+                ctxBernoulliAnim.moveTo(startX, startY + off * pipeRadius);
+                ctxBernoulliAnim.lineTo(trans1X, startY + off * pipeRadius);
+                ctxBernoulliAnim.lineTo(trans2X, endY + off * pipeRadius);
+                ctxBernoulliAnim.lineTo(endX, endY + off * pipeRadius);
+            }
+            ctxBernoulliAnim.stroke(); ctxBernoulliAnim.setLineDash([]);
+
+            bernoulliParticles.forEach(p => {
+                p.x += (v1 * 2) * p.speed;
+                if(p.x > endX) p.x = startX;
+
+                let currX = p.x;
+                let currY = startY;
+                if(currX > trans1X && currX < trans2X) {
+                    let prog = (currX - trans1X) / (trans2X - trans1X);
+                    currY = startY + (endY - startY) * prog;
+                } else if(currX >= trans2X) {
+                    currY = endY;
+                } else {
+                    currY = startY;
+                }
+
+                let posY = currY + p.lane * (pipeRadius * 0.7);
+                ctxBernoulliAnim.fillStyle = '#bae6fd';
+                ctxBernoulliAnim.beginPath(); ctxBernoulliAnim.arc(currX, posY, 2.5, 0, Math.PI * 2); ctxBernoulliAnim.fill();
+            });
+
+            ctxBernoulliAnim.fillStyle = '#ffffff'; ctxBernoulliAnim.font = 'extrabold 16px Plus Jakarta Sans';
+            ctxBernoulliAnim.fillText('1', startX + 40, startY + 5);
+            ctxBernoulliAnim.fillText('2', trans1X + 40, endY + 25);
+        }
+
+        function submitLKPD() {
+            const a1 = document.getElementById('ans-1').value.trim();
+            const a2 = document.getElementById('ans-2').value.trim();
+            if(!a1 || !a2) { alert("Harap lengkapi jawaban LKPD."); return; }
+            alert(`Laporan LKPD berhasil dikirim atas nama ${studentData.name} (${studentData.class})!`);
+        }
+
+        function submitReflection() {
+            const q1 = document.getElementById('ref-q1').value;
+            const q2 = document.getElementById('ref-q2').value.trim();
+            const q3 = document.getElementById('ref-q3').value.trim();
+            if(!q2) { alert("Harap isi tanggapan refleksi Anda."); return; }
+            alert(`Terima kasih ${studentData.name}! Refleksi penggunaan media pembelajaran berhasil disimpan.`);
+            switchTab('theory');
+        }
+    </script>
+</body>
+</html>
